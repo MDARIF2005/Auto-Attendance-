@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Organization Login & Registration</title>
+</head>
+<body>
+	<h2>Admin Login</h2>
+	<form action="/login" method="POST">
+		<input type="hidden" name="role" value="admin">
+		<label for="admin_email">Email:</label><br>
+		<input type="email" id="admin_email" name="email" required><br><br>
+		<label for="admin_password">Password:</label><br>
+		<input type="password" id="admin_password" name="password" required><br><br>
+		<button type="submit">Login as Admin</button>
+	</form>
+
+	<h2>Faculty Login</h2>
+	<form action="/login" method="POST">
+		<input type="hidden" name="role" value="faculty">
+		<label for="faculty_email">Email:</label><br>
+		<input type="email" id="faculty_email" name="email" required><br><br>
+		<label for="faculty_password">Password:</label><br>
+		<input type="password" id="faculty_password" name="password" required><br><br>
+		<button type="submit">Login as Faculty</button>
+	</form>
+
+	<h2>Student Login</h2>
+	<form action="/login" method="POST">
+		<input type="hidden" name="role" value="student">
+		<label for="student_email">Email:</label><br>
+		<input type="email" id="student_email" name="email" required><br><br>
+		<label for="student_password">Password:</label><br>
+		<input type="password" id="student_password" name="password" required><br><br>
+		<button type="submit">Login as Student</button>
+	</form>
+</body>
+</html>

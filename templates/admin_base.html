@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Admin Dashboard</title>
+	<style>
+		body { font-family: Arial, sans-serif; background: #f8f9fa; }
+		.container { max-width: 1200px; margin: auto; padding: 30px; background: #fff; border-radius: 8px; }
+		h2 { margin-top: 30px; }
+		.section { margin-bottom: 40px; }
+		.filter-form { margin-bottom: 20px; }
+		table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+		th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+		th { background: #e9ecef; }
+	</style>
+</head>
+<body>
+	<div class="container">
+		<h1>Organization Dashboard</h1>
+		<!-- Organization Info -->
+		<div class="section">
+			<h2>Organization Details</h2>
+			<ul>
+				<li><strong>Name:</strong> {{ organization.name }}</li>
+				<li><strong>Short Code:</strong> {{ organization.code }}</li>
+				<li><strong>Area:</strong> {{ organization.area }}</li>
+				<li><strong>Area Pin:</strong> {{ organization.areapin }}</li>
+				<li><strong>Country:</strong> {{ organization.country }}</li>
+				<li><strong>Contact:</strong> {{ organization.contact }}</li>
+				<li><strong>Admin Email:</strong> {{ organization.admin_email }}</li>
+			</ul>
+		</div>
+
+		<!-- Student Section -->
+		<div class="section">
+			<h2>Students</h2>
+			<form class="filter-form" method="GET" action="">
+				Academic Year: <input type="text" name="academic_year" value="{{ request.args.get('academic_year', '') }}">
+				Branch: <input type="text" name="branch" value="{{ request.args.get('branch', '') }}">
+				Section: <input type="text" name="section" value="{{ request.args.get('section', '') }}">
+				<button type="submit">Filter</button>
+			</form>
+			<table>
+				<tr>
+					<th>Username</th><th>Role Number</th><th>Email</th><th>Branch</th><th>Academic Year</th><th>Section</th><th>Organization</th>
+				</tr>
+				{% for student in students %}
+				<tr>
+					<td>{{ student.username }}</td><td>{{ student.rolenumber }}</td><td>{{ student.email }}</td><td>{{ student.branch }}</td><td>{{ student.academic_year }}</td><td>{{ student.section }}</td><td>{{ student.organization }}</td>
+				</tr>
+				{% endfor %}
+			</table>
+		</div>
+
+		<!-- Faculty Section -->
+		<div class="section">
+			<h2>Faculty</h2>
+			<form class="filter-form" method="GET" action="">
+				Department: <input type="text" name="department" value="{{ request.args.get('department', '') }}">
+				<button type="submit">Filter</button>
+			</form>
+			<table>
+				<tr>
+					<th>Username</th><th>Faculty ID</th><th>Email</th><th>Department</th><th>Organization</th>
+				</tr>
+				{% for faculty in faculty_list %}
+				<tr>
+					<td>{{ faculty.username }}</td><td>{{ faculty.faculty_id }}</td><td>{{ faculty.email }}</td><td>{{ faculty.department }}</td><td>{{ faculty.organization }}</td>
+				</tr>
+				{% endfor %}
+			</table>
+		</div>
+
+		<!-- Attendance Section -->
+		<div class="section">
+			<h2>Attendance</h2>
+			<form class="filter-form" method="GET" action="">
+				Academic Year: <input type="text" name="academic_year" value="{{ request.args.get('academic_year', '') }}">
+				Branch: <input type="text" name="branch" value="{{ request.args.get('branch', '') }}">
+				Section: <input type="text" name="section" value="{{ request.args.get('section', '') }}">
+				<button type="submit">Filter</button>
+			</form>
+			<table>
+				<tr>
+					<th>Date</th><th>Username</th><th>Role</th><th>Status</th><th>Academic Year</th><th>Branch</th><th>Section</th>
+				</tr>
+				{% for att in attendance %}
+				<tr>
+					<td>{{ att.date }}</td><td>{{ att.username }}</td><td>{{ att.role }}</td><td>{{ att.status }}</td><td>{{ att.academic_year }}</td><td>{{ att.branch }}</td><td>{{ att.section }}</td>
+				</tr>
+				{% endfor %}
+			</table>
+		</div>
+
+		<!-- Timetable Section -->
+		<div class="section">
+			<h2>Timetable</h2>
+			<form class="filter-form" method="GET" action="">
+				Academic Year: <input type="text" name="academic_year" value="{{ request.args.get('academic_year', '') }}">
+				Branch: <input type="text" name="branch" value="{{ request.args.get('branch', '') }}">
+				Section: <input type="text" name="section" value="{{ request.args.get('section', '') }}">
+				<button type="submit">Filter</button>
+			</form>
+			<table>
+				<tr>
+					<th>Day</th><th>Time</th><th>Subject</th><th>Faculty</th><th>Academic Year</th><th>Branch</th><th>Section</th>
+				</tr>
+				{% for tt in timetable %}
+				<tr>
+					<td>{{ tt.day }}</td><td>{{ tt.time }}</td><td>{{ tt.subject }}</td><td>{{ tt.faculty }}</td><td>{{ tt.academic_year }}</td><td>{{ tt.branch }}</td><td>{{ tt.section }}</td>
+				</tr>
+				{% endfor %}
+			</table>
+		</div>
+	</div>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Admin Base</title>
+	<style>
+		body { font-family: Arial, sans-serif; background: #f8f9fa; }
+		.container { max-width: 1200px; margin: auto; padding: 30px; background: #fff; border-radius: 8px; }
+	</style>
+</head>
+<body>
+	<div class="container">
+		{% block content %}
+		<!-- Content will be injected here by child templates -->
+		{% endblock %}
+	</div>
+</body>
+</html>
