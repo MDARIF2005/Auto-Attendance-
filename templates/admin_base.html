@@ -71,14 +71,12 @@
     <!-- Sidebar -->
     <div class="sidebar">
         <h2>{{ organization.name }}</h2>
+		
         <a href="{{ url_for('view_students', org_short=organization.short) }}" 
            class="{% if active_tab=='students' %}active{% endif %}">Students</a>
         <a href="{{ url_for('view_faculty', org_short=organization.short) }}" 
            class="{% if active_tab=='faculty' %}active{% endif %}">Faculty</a>
-        <a href="{{ url_for('view_attendance', org_short=organization.short) }}" 
-           class="{% if active_tab=='attendance' %}active{% endif %}">Attendance</a>
-        <a href="{{ url_for('view_timetable', org_short=organization.short) }}" 
-           class="{% if active_tab=='timetable' %}active{% endif %}">Timetable</a>
+       
     </div>
 
     <!-- Main content -->
