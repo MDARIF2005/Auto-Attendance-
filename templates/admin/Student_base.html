@@ -1,0 +1,20 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Student Dashboard{% endblock %}
+{% block content %}
+
+    <h2>{{ organization.name }}</h2>
+    <a href="{{ url_for('admin_student_dashboard', org_short=organization.short, admin_id=admin_id) }}" class="{% if active_tab=='admin_student_dashboard' %}active{% endif %}">Admin Student Dashboard</a>
+    <a href="{{ url_for('admin_student_manage', org_short=organization.short, admin_id=admin_id) }}" class="{% if active_tab=='admin_student_manage' %}active{% endif %}">Manage Students</a>
+    <a href="{{ url_for('admin_student_attendance', org_short=organization.short, admin_id=admin_id) }}" class="{% if active_tab=='admin_student_attendance' %}active{% endif %}">Student Attendance</a>
+    <a href="{{ url_for('admin_student_update', org_short=organization.short, admin_id=admin_id) }}" class="{% if active_tab=='admin_student_update' %}active{% endif %}">Update Student Details</a>
+
+
+
+    {% block StudentContent %}
+        <h2>Welcome, Student!</h2>
+        <p>This is your student dashboard. You can view your profile, attendance, and more here.</p>
+        <!-- Add student-specific content here -->
+    {% endblock %}
+    {% block AdminStudentContent %}{% endblock %}
+{% endblock %}

@@ -56,6 +56,7 @@ def login():
             session['user_email'] = email
             session['role'] = role
             session['org_short'] = user.get('org_short', '').strip()
+            session['admin_id'] = user.get('admin_id', user.get('email')) if role == 'admin' else None
 
             flash(f'✅ Logged in successfully as {role.capitalize()}!')
 
@@ -78,7 +79,7 @@ def login():
 
             # Redirect based on role
             if role == 'admin':
-                return redirect(url_for('admin_dashboard', org_short=session['org_short']))
+                return redirect(url_for('admin_dashboard', org_short=session['org_short'], admin_id=session['admin_id']))
             elif role == 'faculty':
                 return redirect(url_for('view_faculty', org_short=session['org_short']))
             else:  # student
@@ -188,9 +189,9 @@ def show_organization(org_short):
     return render_template('organisation.html', organization=org_data)
 
 # --------------------- ADMIN DASHBOARD ---------------------
-@app.route('/<org_short>/admin')
+@app.route('/<org_short>/admin/<admin_id>')
 @login_required
-def admin_dashboard(org_short):
+def admin_dashboard(org_short, admin_id):
     org_short = org_short.strip()  # normalize input
     orgs_ref = db.reference('organizations')
     all_orgs = orgs_ref.get() or {}
@@ -204,7 +205,7 @@ def admin_dashboard(org_short):
     if not organization:
         return render_template("not_found.html", org_short=org_short), 404
 
-    return render_template('admin/home.html', organization=organization, active_tab='home')
+    return render_template('admin/home.html', organization=organization, active_tab='home', admin_id=admin_id)
 
 # --------------------- ADMIN PAGES ---------------------
 @app.route('/<org_short>/students')
@@ -232,5 +233,35 @@ def view_faculty(org_short):
     return render_template('faculty.html', organization=organization, faculty_list=faculty_list, active_tab='faculty')
 
 # --------------------- MAIN ---------------------
+
+# --------------------- ADMIN STUDENT MANAGEMENT PAGES ---------------------
+@app.route('/<org_short>/admin/<admin_id>/student_dashboard', endpoint='admin_student_dashboard')
+@login_required
+def admin_student_dashboard(org_short, admin_id):
+    org_ref = db.reference(f'organizations/{org_short}')
+    organization = org_ref.get()
+    return render_template('admin/admin_student_dashboard.html', organization=organization, active_tab='admin_student_dashboard', admin_id=admin_id)
+
+@app.route('/<org_short>/admin/<admin_id>/student_manage', endpoint='admin_student_manage')
+@login_required
+def admin_student_manage(org_short, admin_id):
+    org_ref = db.reference(f'organizations/{org_short}')
+    organization = org_ref.get()
+    return render_template('admin/admin_student_manage.html', organization=organization, active_tab='admin_student_manage', admin_id=admin_id)
+
+@app.route('/<org_short>/admin/<admin_id>/student_attendance', endpoint='admin_student_attendance')
+@login_required
+def admin_student_attendance(org_short, admin_id):
+    org_ref = db.reference(f'organizations/{org_short}')
+    organization = org_ref.get()
+    return render_template('admin/admin_student_attendance.html', organization=organization, active_tab='admin_student_attendance', admin_id=admin_id)
+
+@app.route('/<org_short>/admin/<admin_id>/student_update', endpoint='admin_student_update')
+@login_required
+def admin_student_update(org_short, admin_id):
+    org_ref = db.reference(f'organizations/{org_short}')
+    organization = org_ref.get()
+    return render_template('admin/admin_student_update.html', organization=organization, active_tab='admin_student_update', admin_id=admin_id)
+
 if __name__ == '__main__':
     app.run(debug=True)

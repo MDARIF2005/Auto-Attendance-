@@ -70,20 +70,28 @@
 <body>
     <!-- Sidebar -->
     <div class="sidebar">
-        <h2>{{ organization.name }}</h2>
-		
-        <a href="{{ url_for('view_students', org_short=organization.short) }}" 
-           class="{% if active_tab=='students' %}active{% endif %}">Students</a>
-        <a href="{{ url_for('view_faculty', org_short=organization.short) }}" 
-           class="{% if active_tab=='faculty' %}active{% endif %}">Faculty</a>
+    <h2>{{ organization.name }}</h2>
+    <a href="{{ url_for('admin_dashboard', org_short=organization.short, admin_id=admin_id) }}" class="{% if active_tab=='home' %}active{% endif %}">Admin Dashboard</a>
+    <a href="{{ url_for('admin_student_dashboard', org_short=organization.short, admin_id=admin_id) }}" class="{% if active_tab=='admin_student_dashboard' %}active{% endif %}">Student Dashboard</a>
+    <a href="{{ url_for('view_faculty', org_short=organization.short) }}" class="{% if active_tab=='faculty' %}active{% endif %}">Faculty</a>
        
     </div>
-
-    <!-- Main content -->
     <div class="container">
-        <h1>Admin Dashboard</h1>
-        <hr>
-        {% block content %}{% endblock %}
+    <div class="section">
+    <h2>Organization Details</h2>
+    <ul>
+        <li><strong>Name:</strong> {{ organization.name }}</li>
+        <li><strong>Short Code:</strong> {{ organization.short }}</li> <!-- use short -->
+        <li><strong>Organization Code:</strong> {{ organization.code }}</li> <!-- optional -->
+        <li><strong>Admin Email:</strong> {{ organization.admin_email }}</li>
+     
+    </ul>
+    </div>
+  {% block content %}
+    
+
+{% endblock %}
+
     </div>
 </body>
 </html>
