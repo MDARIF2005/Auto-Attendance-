@@ -1,28 +1,76 @@
-
 import flask
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from firebase import db, firebase
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # Needed for flash messages
+app.secret_key = 'your_secret_key'  # ⚠️ Change this in production
 
+# --------------------- LOGIN REQUIRED DECORATOR ---------------------
+from functools import wraps
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_email' not in session:
+            flash('⚠️ Please login first!')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# --------------------- ROUTES ---------------------
 
 @app.route('/', methods=['GET'])
-def get_data():
+def index():
     return render_template('index.html')
 
-# Route for organization registration page
-@app.route('/ograisationreg', methods=['GET'])
-def organisation_registration_page():
-    return render_template('ograisationreg.html')
+
+@app.route('/organizationreg', methods=['GET'])
+def organization_registration_page():
+    return render_template('organizationreg.html')
 
 
+# --------------------- LOGIN/LOGOUT ---------------------
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        try:
+            user = firebase.auth().sign_in_with_email_and_password(email, password)
+            session['user_email'] = email
+            flash('✅ Logged in successfully!')
+            # Redirect based on role
+            user_data = db.child('users').order_by_child('email').equal_to(email).get()
+            role = None
+            org_short = None
+            if user_data.each():
+                for u in user_data.each():
+                    role = u.val().get('role')
+                    org_short = u.val().get('org_short')
+                    break
+            if role == 'admin':
+                return redirect(url_for('admin_dashboard', org_short=org_short))
+            else:
+                flash('⚠️ Only admin access for now.')
+                return redirect(url_for('index'))
+        except Exception as e:
+            flash(f'⚠️ Login failed: {e}')
+            return redirect(url_for('login'))
+    return render_template('login.html')
 
 
-# Admin registration route (with organization)
+@app.route('/logout')
+@login_required
+def logout():
+    session.pop('user_email', None)
+    flash('✅ Logged out successfully!')
+    return redirect(url_for('index'))
+
+# --------------------- ADMIN REGISTRATION ---------------------
 @app.route('/register_admin', methods=['POST'])
 def register_admin():
     org_name = request.form.get('organization')
+    org_short = request.form.get('org_short').strip()
     org_code = request.form.get('org_code')
     org_area = request.form.get('org_area')
     org_areapin = request.form.get('org_areapin')
@@ -32,130 +80,109 @@ def register_admin():
     email = request.form.get('email')
     password = request.form.get('password')
     confirm_password = request.form.get('confirm_password')
+    status = request.form.get('status', 'inactive')
+
     if password != confirm_password:
-        flash('Passwords do not match!')
-        return redirect(url_for('get_data'))
+        flash('❌ Passwords do not match!')
+        return redirect(url_for('organization_registration_page'))
+
     try:
-        user = firebase.auth().create_user_with_email_and_password(email, password)
+        firebase.auth().create_user_with_email_and_password(email, password)
+
         # Save organization info
         org_data = {
             'name': org_name,
+            'short': org_short,
             'code': org_code,
             'area': org_area,
             'areapin': org_areapin,
             'country': org_country,
             'contact': org_contact,
-            'admin_email': email
+            'admin_email': email,
+            'status': status
         }
         db.child('organizations').push(org_data)
+
         # Save admin info
         admin_data = {
             'username': email.split('@')[0],
             'email': email,
             'role': 'admin',
             'admin_contact': admin_contact,
-            'organization': org_name
+            'organization': org_name,
+            'org_short': org_short
         }
         db.child('users').push(admin_data)
-        flash('Organization and admin registered successfully!')
-        # Redirect to /org_name/admin
-        return redirect(url_for('org_role_page', org_name=org_name, role='admin'))
+
+        flash('✅ Organization and admin registered successfully!')
+        return redirect(url_for('login'))
+
     except Exception as e:
-        flash('Admin registration failed: ' + str(e))
-        return redirect(url_for('get_data'))
+        flash(f'⚠️ Admin registration failed: {e}')
+        return redirect(url_for('organization_registration_page'))
 
-# Login route for admin/faculty/student
-@app.route('/login', methods=['POST'])
-def login():
-    email = request.form.get('email')
-    password = request.form.get('password')
-    try:
-        user = firebase.auth().sign_in_with_email_and_password(email, password)
-        # Fetch user info from Realtime Database
-        users = db.child('users').order_by_child('email').equal_to(email).get()
-        user_data = None
-        for u in users.each():
-            user_data = u.val()
-            break
-        if not user_data:
-            flash('User record not found in database!')
-            return redirect(url_for('get_data'))
-        role = user_data.get('role', 'Unknown')
-        org_name = user_data.get('organization', 'Unknown')
-        flash(f'Login successful! Role: {role}, Organization: {org_name}')
-        return redirect(url_for('get_data'))
-    except Exception as e:
-        flash('Login failed: ' + str(e))
-        return redirect(url_for('get_data'))
-
-
-# Route to show organization details by type and name
+# --------------------- ORGANIZATION PAGE ---------------------
+# --------------------- ORGANIZATION PAGE ---------------------
 @app.route('/<org_short>', methods=['GET'])
-def show_organization(org_type, org_name):
-    # Find organization by type and name
-    orgs = db.child('organizations').order_by_child('type').equal_to(org_type).get()
+@login_required
+def show_organization(org_short):
+    org_short = org_short.strip()
+    orgs = db.child('organizations').order_by_child('short').equal_to(org_short).get()
+
     org_data = None
-    for org in orgs.each():
-        if org.val().get('name') == org_name:
+    if orgs.each():
+        for org in orgs.each():
             org_data = org.val()
             break
-    if org_data:
-        return render_template('student_base.html', organization=org_data)
-    else:
-        return f"No organization found for {org_type} named {org_name}", 404
+
+    # If organization not found
+    if not org_data:
+        return render_template("not_found.html", org_short=org_short), 404
+
+    # If organization exists but inactive
+    if org_data.get('status') != 'active':
+        return render_template("inactive.html", organization=org_data), 403
+
+    # If organization exists and active
+    return render_template('organisation.html', organization=org_data)
 
 
-
-# Admin dashboard route
-@app.route('/<org_short>/admin', methods=['GET'])
-def admin_dashboard(org_name):
-    # Get organization info
-    orgs = db.child('organizations').order_by_child('name').equal_to(org_name).get()
+# --------------------- ADMIN DASHBOARD ---------------------
+@app.route('/<org_short>/admin')
+@login_required
+def admin_dashboard(org_short):
+    org_short = org_short.strip()
+    orgs = db.child('organizations').order_by_child('short').equal_to(org_short).get()
     organization = None
-    for org in orgs.each():
-        organization = org.val()
-        break
-    # Get filters from query params
-    academic_year = flask.request.args.get('academic_year', '')
-    branch = flask.request.args.get('branch', '')
-    section = flask.request.args.get('section', '')
-    department = flask.request.args.get('department', '')
-    # Get students
-    students = []
-    users = db.child('users').order_by_child('organization').equal_to(org_name).get()
-    for u in users.each():
-        user = u.val()
-        if user.get('role') == 'student':
-            if (not academic_year or user.get('academic_year', '') == academic_year) and \
-               (not branch or user.get('branch', '') == branch) and \
-               (not section or user.get('section', '') == section):
-                students.append(user)
-    # Get faculty
-    faculty_list = []
-    for u in users.each():
-        user = u.val()
-        if user.get('role') == 'faculty':
-            if not department or user.get('department', '') == department:
-                faculty_list.append(user)
-    # Get attendance
-    attendance = []
-    att_records = db.child('attendance').order_by_child('organization').equal_to(org_name).get()
-    for att in att_records.each() if att_records.each() else []:
-        record = att.val()
-        if (not academic_year or record.get('academic_year', '') == academic_year) and \
-           (not branch or record.get('branch', '') == branch) and \
-           (not section or record.get('section', '') == section):
-            attendance.append(record)
-    # Get timetable
-    timetable = []
-    tt_records = db.child('timetable').order_by_child('organization').equal_to(org_name).get()
-    for tt in tt_records.each() if tt_records.each() else []:
-        record = tt.val()
-        if (not academic_year or record.get('academic_year', '') == academic_year) and \
-           (not branch or record.get('branch', '') == branch) and \
-           (not section or record.get('section', '') == section):
-            timetable.append(record)
-    return flask.render_template('admin.html', organization=organization, students=students, faculty_list=faculty_list, attendance=attendance, timetable=timetable)
+    if orgs.each():
+        for org in orgs.each():
+            organization = org.val()
+            break
+    if not organization:
+        return render_template("not_found.html", org_short=org_short), 404
 
+    return render_template('admin/home.html', organization=organization)
+
+
+# --------------------- ADMIN PAGES ---------------------
+@app.route('/<org_short>/students')
+@login_required
+def view_students(org_short):
+    orgs = db.child('organizations').order_by_child('short').equal_to(org_short).get()
+    organization = orgs.each()[0].val() if orgs.each() else None
+    students = [u.val() for u in db.child('users').order_by_child('org_short').equal_to(org_short).get().each() if u.val().get('role')=='student']
+    return render_template('students.html', organization=organization, students=students, active_tab='students')
+
+
+@app.route('/<org_short>/faculty')
+@login_required
+def view_faculty(org_short):
+    orgs = db.child('organizations').order_by_child('short').equal_to(org_short).get()
+    organization = orgs.each()[0].val() if orgs.each() else None
+    faculty_list = [u.val() for u in db.child('users').order_by_child('org_short').equal_to(org_short).get().each() if u.val().get('role')=='faculty']
+    return render_template('faculty.html', organization=organization, faculty_list=faculty_list, active_tab='faculty')
+
+
+# --------------------- MAIN ---------------------
 if __name__ == '__main__':
     app.run(debug=True)
